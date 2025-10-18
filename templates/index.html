@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - AI Tra Cứu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans flex items-center justify-center min-h-screen">
+
+<div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Hệ thống Hỏi-Đáp AI</h1>
+    <p class="text-center text-gray-600 mb-6">Vui lòng nhập email của bạn để tiếp tục.</p>
+
+    <div class="mb-4">
+        <label for="emailInput" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+        <input type="email" id="emailInput"
+               class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+               placeholder="vidu@congty.com">
+        <p id="errorText" class="text-red-500 text-sm mt-2 hidden"></p>
+    </div>
+
+    <button id="loginButton" class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        Bắt đầu
+    </button>
+</div>
+
+<script>
+    const loginButton = document.getElementById('loginButton');
+    const emailInput = document.getElementById('emailInput');
+    const errorText = document.getElementById('errorText');
+
+    loginButton.addEventListener('click', () => {
+        const email = emailInput.value.trim();
+
+        // Kiểm tra email đơn giản
+        if (!email || !email.includes('@')) {
+            errorText.textContent = 'Vui lòng nhập một địa chỉ email hợp lệ.';
+            errorText.classList.remove('hidden');
+            return;
+        }
+
+        // Ẩn lỗi nếu hợp lệ
+        errorText.classList.add('hidden');
+
+        // Lưu email vào sessionStorage (chỉ tồn tại trong tab này)
+        sessionStorage.setItem('userEmail', email);
+
+        // Chuyển hướng đến trang chat chính
+        window.location.href = '/chat';
+    });
+
+    // Cho phép nhấn Enter để đăng nhập
+    emailInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Ngăn form submit (nếu có)
+            loginButton.click();
+        }
+    });
+</script>
+
+</body>
+</html>

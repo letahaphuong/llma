@@ -1,0 +1,15 @@
+# --- Core dependencies ---
+flask
+flask_cors
+langchain
+pypdf
+python-docx
+sentence-transformers
+chromadb
+unstructured
+docx2txt
+
+# --- Optional: Local LLM support ---
+llama-cpp-python
+langchain-community
+llama-cpp-python

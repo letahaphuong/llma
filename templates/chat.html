@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tra Cứu Ngành Điện</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        // Lấy email từ sessionStorage
+        const userEmail = sessionStorage.getItem('userEmail');
+
+        // Nếu không tìm thấy email, chuyển hướng về trang đăng nhập
+        if (!userEmail) {
+            alert('Vui lòng đăng nhập để sử dụng tính năng này.');
+            window.location.href = '/'; // Chuyển về trang chủ (index.html)
+        }
+    </script>
+    </head>
+<body class="bg-gray-100 font-sans">
+<div class="container mx-auto p-6">
+    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Hệ thống Hỏi-Đáp AI Ngành Điện</h1>
+    <p class="text-center text-sm text-gray-600 mb-4">Đang đăng nhập với email: <strong id="displayEmail" class="text-blue-600"></strong></p>
+
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 class="text-xl font-semibold mb-3">Tải lên tài liệu mới</h2>
+        <input type="file" id="fileUpload" multiple accept=".pdf,.doc,.docx" class="block w-full text-sm text-gray-500
+            file:mr-4 file:py-2 file:px-4
+            file:rounded-full file:border-0
+            file:text-sm file:font-semibold
+            file:bg-violet-50 file:text-violet-700
+            hover:file:bg-violet-100
+        "/>
+        <button id="uploadButton" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Tải lên
+        </button>
+        <div id="uploadStatus" class="mt-2 text-sm"></div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-3">Đặt câu hỏi của bạn</h2>
+        <div class="flex">
+            <input type="text" id="questionInput"
+                   class="flex-grow p-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="Ví dụ: Quy trình xử lý sự cố quá tải máy biến áp là gì?">
+            <button id="askButton" class="px-6 py-3 bg-green-600 text-white rounded-r-lg hover:bg-green-700">Gửi
+            </button>
+        </div>
+
+        <div id="responseArea" class="mt-6 p-4 border rounded-lg bg-gray-50 hidden">
+            <h3 class="font-bold text-lg mb-2">Câu trả lời từ AI:</h3>
+            <p id="answer" class="text-gray-700 whitespace-pre-wrap"></p>
+            <div id="sources" class="mt-4">
+                <h4 class="font-semibold">Nguồn tham khảo:</h4>
+                <ul id="sourceList" class="list-disc list-inside text-sm text-gray-600"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- LẤY EMAIL VÀ HIỂN THỊ (MỚI) ---
+    // (Script kiểm tra đã chạy ở <head>, nên ở đây chắc chắn có email)
+    const emailForAPI = sessionStorage.getItem('userEmail');
+    document.getElementById('displayEmail').textContent = emailForAPI || 'N/A';
+    // ------------------------------------
+
+
+    // --- KHAI BÁO BIẾN (Chỉ 1 lần ở đây) ---
+    const askButton = document.getElementById('askButton');
+    const questionInput = document.getElementById('questionInput');
+    const responseArea = document.getElementById('responseArea');
+    const answerEl = document.getElementById('answer');
+    const sourceListEl = document.getElementById('sourceList');
+
+    const uploadButton = document.getElementById('uploadButton');
+    const fileUpload = document.getElementById('fileUpload');
+    const uploadStatus = document.getElementById('uploadStatus');
+
+    // --- Xử lý sự kiện hỏi đáp (ĐÃ SỬA) ---
+    askButton.addEventListener('click', async () => {
+        const question = questionInput.value;
+        if (!question) return;
+
+        // Hiển thị trạng thái đang xử lý
+        answerEl.textContent = 'Đang suy nghĩ...';
+        responseArea.classList.remove('hidden');
+        sourceListEl.innerHTML = '';
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/ask', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                // === THAY ĐỔI QUAN TRỌNG: Gửi cả email ===
+                body: JSON.stringify({
+                    question: question,
+                    email: emailForAPI
+                })
+                // ======================================
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+
+            const data = await response.json();
+            answerEl.textContent = data.answer;
+
+            // Hiển thị nguồn
+            if (data.sources && data.sources.length > 0) {
+                data.sources.forEach(source => {
+                    const li = document.createElement('li');
+                    li.textContent = source;
+                    sourceListEl.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = 'Không có nguồn cụ thể.';
+                sourceListEl.appendChild(li);
+            }
+
+        } catch (error) {
+            answerEl.textContent = 'Đã có lỗi xảy ra. Vui lòng thử lại.';
+            console.error('Error:', error);
+        }
+    });
+
+    // Thêm: Cho phép nhấn Enter để gửi câu hỏi
+    questionInput.addEventListener('keypress', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            askButton.click();
+        }
+    });
+
+    // --- Xử lý sự kiện upload (Giữ nguyên như file gốc của bạn) ---
+    uploadButton.addEventListener('click', async () => {
+        const files = fileUpload.files;
+
+        if (files.length === 0) {
+            uploadStatus.textContent = 'Vui lòng chọn một hoặc nhiều file.';
+            uploadStatus.className = 'mt-2 text-sm text-red-600';
+            return;
+        }
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('file', files[i]);
+        }
+
+        uploadStatus.textContent = `Đang tải lên và xử lý ${files.length} file...`;
+        uploadStatus.className = 'mt-2 text-sm text-gray-700';
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/upload', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+                let statusMsg = result.message + '\n';
+                if (result.processed && result.processed.length > 0) {
+                    statusMsg += `File thành công: ${result.processed.join(', ')}\n`;
+                }
+                if (result.errors && result.errors.length > 0) {
+                    statusMsg += `Lỗi: \n- ${result.errors.join('\n- ')}`;
+                    uploadStatus.className = 'mt-2 text-sm text-red-600';
+                } else {
+                     uploadStatus.className = 'mt-2 text-sm text-green-600';
+                }
+                uploadStatus.textContent = statusMsg;
+                uploadStatus.style.whiteSpace = 'pre-line';
+            } else {
+                uploadStatus.textContent = `Lỗi: ${result.error}`;
+                uploadStatus.className = 'mt-2 text-sm text-red-600';
+            }
+        } catch (error) {
+            uploadStatus.textContent = 'Lỗi kết nối đến server.';
+            uploadStatus.className = 'mt-2 text-sm text-red-600';
+            console.error('Upload Error:', error);
+        }
+    });
+</script>
+</body>
+</html>
